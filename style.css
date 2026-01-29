@@ -1,0 +1,26 @@
+body {
+  margin: 0;
+  padding: 20px;
+  background: #111;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
+
+#game {
+  position: relative;
+  width: 1200px;
+  margin: 20px auto;
+  cursor: crosshair;
+}
+
+#scene {
+  max-height: 80vh;
+  object-fit: contain;
+}
+
+#message {
+  font-size: 24px;
+  font-weight: bold;
+  margin-top: 20px;
+}
