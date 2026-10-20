@@ -1,19 +1,100 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Onde está Bulaxa?</title>
+  <meta name="description" content="Bulaxa se escondeu numa praia lotada. Consegue encontrar?">
+  <meta name="theme-color" content="#0E2A47">
+  <link rel="icon" href="assets/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bagel+Fat+One&display=swap">
+  <link rel="preload" as="image" href="assets/cena.webp" type="image/webp" fetchpriority="high">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <h1 id="title">Onde está Bulaxa?</h1>
+  <header class="topo">
+    <h1 class="titulo">Onde está Bulaxa?</h1>
+    <p class="placar">Tentativas: <strong id="tentativas">0</strong></p>
+  </header>
 
-  <div id="game">
-    <img src="assets/cena.png" id="scene">
-  </div>
+  <main class="moldura">
+    <div
+      class="palco"
+      id="palco"
+      tabindex="0"
+      role="application"
+      aria-label="Cena da praia"
+      aria-describedby="instrucoes"
+    >
+      <div class="camada" id="camada">
+        <picture>
+          <source srcset="assets/cena.webp" type="image/webp">
+          <img
+            class="cena"
+            id="cena"
+            src="assets/cena.jpg"
+            width="2560"
+            height="1600"
+            alt="Praia lotada desenhada no estilo Onde está Wally, com centenas de banhistas, barcos no mar e cavalos na areia."
+            draggable="false"
+            decoding="async"
+          >
+        </picture>
+      </div>
+      <div class="marcas" id="marcas" aria-hidden="true"></div>
+      <div class="mira" aria-hidden="true"></div>
+    </div>
 
-  <p id="message"></p>
+    <p class="carregando" id="carregando">Carregando a praia…</p>
+
+    <div class="zoom" role="group" aria-label="Zoom da cena">
+      <button type="button" class="botao-icone" id="ampliar" aria-label="Ampliar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <button type="button" class="botao-icone" id="reduzir" aria-label="Reduzir">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>
+      </button>
+      <button type="button" class="botao-icone" id="ajustar" aria-label="Ver a cena inteira">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+      </button>
+    </div>
+
+    <p class="so-leitor" id="instrucoes">
+      Setas movem a mira, mais e menos ampliam, zero mostra a cena inteira.
+      Enter escolhe o ponto da mira.
+    </p>
+  </main>
+
+  <footer class="rodape">
+    <p class="mensagem" id="mensagem" role="status"></p>
+    <button type="button" class="botao botao-primario" id="denovo-rodape" hidden>Jogar de novo</button>
+  </footer>
+
+  <dialog class="vitoria" id="vitoria" aria-labelledby="vitoria-titulo" aria-describedby="vitoria-resumo">
+    <div class="vitoria-foto">
+      <picture>
+        <source srcset="assets/bulaxa.webp" type="image/webp">
+        <img
+          src="assets/bulaxa.png"
+          width="433"
+          height="577"
+          alt="Bulaxa, um cachorro caramelo, encostando o focinho na câmera."
+        >
+      </picture>
+    </div>
+    <div class="vitoria-painel">
+      <h2 class="vitoria-titulo" id="vitoria-titulo">Parabéns, você achou o Bulaxa!</h2>
+      <p class="vitoria-resumo" id="vitoria-resumo"></p>
+      <div class="vitoria-acoes">
+        <button type="button" class="botao botao-primario" id="denovo" autofocus>Jogar de novo</button>
+        <button type="button" class="botao botao-secundario" id="ver-cena">Ver na cena</button>
+      </div>
+    </div>
+  </dialog>
 
   <script src="script.js"></script>
 </body>

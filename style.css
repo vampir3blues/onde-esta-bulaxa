@@ -1,26 +1,556 @@
+/* ===== Tokens ===== */
+:root {
+  /* cor */
+  --mar: #0E2A47;          /* fundo da página */
+  --mar-fundo: #0A2139;    /* fundo do palco (faixas ao redor da cena) */
+  --mar-raso: #17395C;     /* superfícies elevadas: painel, botões de zoom */
+  --mar-borda: #5E8BB8;    /* bordas de controles (3:1 sobre os fundos) */
+  --areia: #FFF4D6;        /* texto principal */
+  --espuma: #A9C1D9;       /* texto secundário */
+  --caramelo: #E3A24A;     /* ação principal e foco (a cor do Bulaxa) */
+  --caramelo-claro: #F0B968;
+  --chapeu: #FF5A1F;       /* destaque de "achou" (o chapéu de festa) */
+
+  /* tipografia */
+  --fonte-titulo: "Bagel Fat One", "Arial Rounded MT Bold", system-ui, sans-serif;
+  --fonte-texto: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --tam-sm: 0.9375rem;
+  --tam-md: 1rem;
+  --tam-titulo: clamp(1.5rem, 1rem + 2.2vw, 2.5rem);
+  --tam-titulo-painel: clamp(1.5rem, 1.15rem + 1.4vw, 2rem);
+
+  /* espaço */
+  --esp-1: 4px;
+  --esp-2: 8px;
+  --esp-3: 12px;
+  --esp-4: 16px;
+  --esp-5: 24px;
+  --margem: var(--esp-4);
+
+  /* forma */
+  --raio-controle: 12px;
+  --raio-palco: 20px;
+  --raio-painel: 28px;
+  --alvo: 44px;            /* área mínima de toque */
+
+  /* movimento */
+  --dur-curta: 180ms;
+  --ease-saida: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-mola: cubic-bezier(0.34, 1.5, 0.64, 1);
+
+  color-scheme: dark;
+}
+
+/* ===== Base ===== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
-  padding: 20px;
-  background: #111;
-  color: #fff;
-  font-family: Arial, sans-serif;
+  display: grid;
+  grid-template-rows: auto minmax(200px, 1fr) auto;
+  height: 100vh;
+  height: 100dvh;
+  padding:
+    env(safe-area-inset-top)
+    env(safe-area-inset-right)
+    env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+  background: var(--mar);
+  color: var(--areia);
+  font-family: var(--fonte-texto);
+  font-size: var(--tam-md);
+  line-height: 1.45;
+  overscroll-behavior: none;
+}
+
+button {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--caramelo);
+  outline-offset: 3px;
+}
+
+.so-leitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ===== Cabeçalho ===== */
+.topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--esp-1) var(--esp-4);
+  padding: var(--esp-3) var(--margem);
+}
+
+.titulo {
+  margin: 0;
+  font-family: var(--fonte-titulo);
+  font-weight: 400;
+  font-size: var(--tam-titulo);
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  text-shadow: 0.05em 0.06em 0 var(--mar-raso);
+}
+
+.placar {
+  margin: 0;
+  color: var(--espuma);
+  font-size: var(--tam-sm);
+}
+
+.placar strong {
+  color: var(--areia);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== Palco (cena com zoom e arrasto) ===== */
+.moldura {
+  position: relative;
+  min-height: 0;
+  min-width: 0;
+}
+
+.palco {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--mar-fundo);
+  cursor: crosshair;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.palco:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 3px var(--caramelo);
+}
+
+.palco.arrastando {
+  cursor: grabbing;
+}
+
+.camada {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.camada picture {
+  display: block;
+}
+
+.cena {
+  display: block;
+  max-width: none;
+  width: 2560px;
+  height: 1600px;
+  opacity: 0;
+  transition: opacity 400ms var(--ease-saida);
+}
+
+.palco.pronta .cena {
+  opacity: 1;
+}
+
+.marcas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* mira: aparece só com o teclado, marca o ponto que o Enter escolhe
+   (a posição é definida pelo script) */
+.mira {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  border: 3px solid var(--areia);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--mar), inset 0 0 0 2px var(--mar);
+  pointer-events: none;
+}
+
+.mira::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: var(--areia);
+  box-shadow: 0 0 0 2px var(--mar);
+}
+
+.palco:focus-visible .mira {
+  display: block;
+}
+
+.palco.achou .mira {
+  display: none;
+}
+
+/* marca de erro: anel que some sozinho */
+.marca-erro {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  margin: -18px 0 0 -18px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--mar), inset 0 0 0 2px var(--mar);
+  animation: erro 900ms var(--ease-saida) forwards;
+}
+
+.marca-erro::before,
+.marca-erro::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 3px;
+  margin: -1.5px 0 0 -7px;
+  background: #fff;
+  box-shadow: 0 0 0 1.5px var(--mar);
+  transform: rotate(45deg);
+}
+
+.marca-erro::after {
+  transform: rotate(-45deg);
+}
+
+@keyframes erro {
+  0% { opacity: 0; transform: scale(0.6); }
+  20% { opacity: 1; transform: scale(1); }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* anel de "achou" em volta do Bulaxa */
+.marca-achou {
+  position: absolute;
+  border: 4px solid var(--chapeu);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px var(--areia), 0 0 0 6px rgb(14 42 71 / 0.6);
+  animation: achou 700ms var(--ease-mola) both;
+}
+
+@keyframes achou {
+  from { opacity: 0; transform: scale(2.4); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.carregando {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--espuma);
+  pointer-events: none;
+}
+
+.carregando[hidden] {
+  display: none;
+}
+
+/* ===== Controles de zoom ===== */
+.zoom {
+  position: absolute;
+  right: var(--esp-3);
+  bottom: var(--esp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+}
+
+.botao-icone {
+  display: grid;
+  place-items: center;
+  width: var(--alvo);
+  height: var(--alvo);
+  padding: 0;
+  border: 1px solid var(--mar-borda);
+  border-radius: var(--raio-controle);
+  background: var(--mar-raso);
+  color: var(--areia);
+  cursor: pointer;
+  box-shadow: 0 2px 0 var(--mar);
+}
+
+.botao-icone svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.botao-icone:hover {
+  border-color: var(--espuma);
+}
+
+.botao-icone:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.botao-icone[aria-disabled="true"] {
+  color: var(--espuma);
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* ===== Rodapé ===== */
+.rodape {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3) var(--esp-4);
+  min-height: calc(var(--alvo) + 2 * var(--esp-3));
+  padding: var(--esp-3) var(--margem);
+}
+
+.mensagem {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--espuma);
+}
+
+.mensagem[data-tom="erro"] {
+  color: var(--areia);
+}
+
+.mensagem[data-tom="achou"] {
+  color: var(--caramelo);
+  font-weight: 700;
+}
+
+/* ===== Botões de texto ===== */
+.botao {
+  flex: none;
+  min-height: var(--alvo);
+  padding: 0 var(--esp-5);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--dur-curta), border-color var(--dur-curta);
+}
+
+.botao[hidden] {
+  display: none;
+}
+
+.botao-primario {
+  background: var(--caramelo);
+  color: var(--mar);
+}
+
+.botao-primario:hover {
+  background: var(--caramelo-claro);
+}
+
+.botao-secundario {
+  background: transparent;
+  border-color: var(--mar-borda);
+  color: var(--areia);
+}
+
+.botao-secundario:hover {
+  border-color: var(--espuma);
+}
+
+/* ===== Vitória ===== */
+.vitoria {
+  --foto-h: clamp(110px, 30dvh, 280px);
+  width: min(26rem, calc(100% - 2 * var(--margem)));
+  max-width: none;
+  max-height: calc(100dvh - 2 * var(--margem));
+  margin: auto auto max(var(--margem), env(safe-area-inset-bottom));
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  color: var(--areia);
+}
+
+.vitoria::backdrop {
+  background: rgb(8 24 41 / 0.55);
+}
+
+/* a foto fica atrás do painel e "espia" por cima da borda */
+.vitoria-foto {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: calc(var(--foto-h) * -0.08);
+}
+
+.vitoria-foto img {
+  display: block;
+  width: auto;
+  height: var(--foto-h);
+  margin: 0 auto;
+}
+
+.vitoria-painel {
+  position: relative;
+  padding: var(--esp-5);
+  border: 1px solid var(--mar-borda);
+  border-radius: var(--raio-painel);
+  background: var(--mar-raso);
   text-align: center;
 }
 
-#game {
-  position: relative;
-  width: 1200px;
-  margin: 20px auto;
-  cursor: crosshair;
+.vitoria-titulo {
+  margin: 0 0 var(--esp-2);
+  font-family: var(--fonte-titulo);
+  font-weight: 400;
+  font-size: var(--tam-titulo-painel);
+  line-height: 1.1;
+  text-wrap: balance;
 }
 
-#scene {
-  max-height: 80vh;
-  object-fit: contain;
+.vitoria-resumo {
+  margin: 0 0 var(--esp-5);
+  color: var(--espuma);
 }
 
-#message {
-  font-size: 24px;
-  font-weight: bold;
-  margin-top: 20px;
+.vitoria-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--esp-3);
+}
+
+.vitoria[open] .vitoria-foto img {
+  animation: espiar 650ms var(--ease-mola) 120ms both;
+}
+
+.vitoria[open] .vitoria-painel {
+  animation: subir 260ms var(--ease-saida) both;
+}
+
+@keyframes espiar {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+
+@keyframes subir {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ===== Telas maiores: palco com respiro e cantos ===== */
+@media (min-width: 768px) {
+  :root {
+    --margem: var(--esp-5);
+  }
+
+  .moldura {
+    margin: 0 var(--margem);
+  }
+
+  .palco {
+    border-radius: var(--raio-palco);
+  }
+
+  .zoom {
+    right: var(--esp-4);
+    bottom: var(--esp-4);
+  }
+}
+
+/* ===== Telas baixas (celular deitado) ===== */
+@media (max-height: 480px) {
+  .topo {
+    padding-block: var(--esp-2);
+  }
+
+  .rodape {
+    min-height: 0;
+    padding-block: var(--esp-2);
+  }
+
+  .titulo {
+    font-size: 1.375rem;
+  }
+
+  .zoom {
+    flex-direction: row;
+  }
+
+  .vitoria {
+    --foto-h: clamp(90px, 28dvh, 160px);
+  }
+
+  .vitoria-painel {
+    padding: var(--esp-4);
+  }
+
+  .vitoria-resumo {
+    margin-bottom: var(--esp-3);
+  }
+}
+
+/* celular deitado: painel de vitória vai para a direita e deixa o Bulaxa à vista */
+@media (max-height: 480px) and (orientation: landscape) {
+  .vitoria {
+    width: min(22rem, 50%);
+    margin: auto max(var(--margem), env(safe-area-inset-right)) auto auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+  }
+
+  /* o erro continua visível, só que sem movimento */
+  .marca-erro {
+    animation: erro-suave 1200ms linear forwards !important;
+  }
+}
+
+@keyframes erro-suave {
+  0%, 70% { opacity: 1; }
+  100% { opacity: 0; }
 }
