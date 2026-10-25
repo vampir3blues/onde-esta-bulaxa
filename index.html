@@ -4,21 +4,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Onde está Bulaxa?</title>
-  <meta name="description" content="Bulaxa se escondeu numa praia lotada. Consegue encontrar?">
+  <meta name="description" content="Bulaxa se escondeu na praia, na estação, no safári, no aeroporto e na Torre de Babel. Consegue encontrar?">
   <meta name="theme-color" content="#0E2A47">
   <link rel="icon" href="assets/favicon.png" type="image/png">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bagel+Fat+One&display=swap">
-  <link rel="preload" as="image" href="assets/cena.webp" type="image/webp" fetchpriority="high">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
   <header class="topo">
     <h1 class="titulo">Onde está Bulaxa?</h1>
-    <p class="placar">Tentativas: <strong id="tentativas">0</strong></p>
+    <div class="topo-info">
+      <label class="escolha">
+        <span class="escolha-rotulo">Cena</span>
+        <select id="escolha-cena"></select>
+      </label>
+      <p class="placar">Tentativas: <strong id="tentativas">0</strong></p>
+    </div>
   </header>
 
   <main class="moldura">
@@ -27,29 +32,17 @@
       id="palco"
       tabindex="0"
       role="application"
-      aria-label="Cena da praia"
+      aria-label="Cena"
       aria-describedby="instrucoes"
     >
       <div class="camada" id="camada">
-        <picture>
-          <source srcset="assets/cena.webp" type="image/webp">
-          <img
-            class="cena"
-            id="cena"
-            src="assets/cena.jpg"
-            width="2560"
-            height="1600"
-            alt="Praia lotada desenhada no estilo Onde está Wally, com centenas de banhistas, barcos no mar e cavalos na areia."
-            draggable="false"
-            decoding="async"
-          >
-        </picture>
+        <canvas class="cena" id="cena" role="img" aria-label="Cena"></canvas>
       </div>
       <div class="marcas" id="marcas" aria-hidden="true"></div>
       <div class="mira" aria-hidden="true"></div>
     </div>
 
-    <p class="carregando" id="carregando">Carregando a praia…</p>
+    <p class="carregando" id="carregando">Carregando a cena…</p>
 
     <div class="zoom" role="group" aria-label="Zoom da cena">
       <button type="button" class="botao-icone" id="ampliar" aria-label="Ampliar">
@@ -71,26 +64,18 @@
 
   <footer class="rodape">
     <p class="mensagem" id="mensagem" role="status"></p>
-    <button type="button" class="botao botao-primario" id="denovo-rodape" hidden>Jogar de novo</button>
+    <button type="button" class="botao botao-primario" id="denovo-rodape" hidden>Outra cena</button>
   </footer>
 
   <dialog class="vitoria" id="vitoria" aria-labelledby="vitoria-titulo" aria-describedby="vitoria-resumo">
     <div class="vitoria-foto">
-      <picture>
-        <source srcset="assets/bulaxa.webp" type="image/webp">
-        <img
-          src="assets/bulaxa.png"
-          width="433"
-          height="577"
-          alt="Bulaxa, um cachorro caramelo, encostando o focinho na câmera."
-        >
-      </picture>
+      <img id="foto-vitoria" width="600" height="800" alt="">
     </div>
     <div class="vitoria-painel">
       <h2 class="vitoria-titulo" id="vitoria-titulo">Parabéns, você achou o Bulaxa!</h2>
       <p class="vitoria-resumo" id="vitoria-resumo"></p>
       <div class="vitoria-acoes">
-        <button type="button" class="botao botao-primario" id="denovo" autofocus>Jogar de novo</button>
+        <button type="button" class="botao botao-primario" id="denovo" autofocus>Outra cena</button>
         <button type="button" class="botao botao-secundario" id="ver-cena">Ver na cena</button>
       </div>
     </div>

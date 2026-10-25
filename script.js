@@ -1,13 +1,67 @@
 (() => {
   "use strict";
 
-  /* tamanho original da cena (assets/cena.png) */
-  const CENA_L = 2560;
-  const CENA_A = 1600;
+  /* cenas: tamanho em px da imagem e esconderijos.
+     cada esconderijo é [x, y, a] em px da imagem: (x, y) é onde o Bulaxa
+     pisa (centro da base) e "a" é a altura de uma pessoa naquele ponto,
+     que dá a escala do recorte (perspectiva) */
+  const CENAS = [
+    {
+      id: "praia", nome: "Praia", l: 3000, a: 1926, onde: "no meio da praia",
+      alt: "Praia lotada do Onde está Wally, com centenas de banhistas, barcos no mar e burricos na areia.",
+      esconderijos: [[2380, 560, 70], [380, 760, 75], [1450, 1180, 100], [2700, 1120, 105], [900, 1650, 130], [1780, 430, 55], [2050, 860, 85]]
+    },
+    {
+      id: "trem", nome: "Estação de trem", l: 2048, a: 1280, onde: "na estação de trem",
+      alt: "Estação de trem lotada do Onde está Wally, com plataformas cheias de passageiros, malas e trens chegando.",
+      esconderijos: [[1290, 480, 55], [560, 920, 70], [1440, 760, 65], [1150, 1240, 90], [260, 520, 55], [1900, 330, 50], [880, 1080, 80]]
+    },
+    {
+      id: "safari", nome: "Safári", l: 2048, a: 1378, onde: "no safári",
+      alt: "Parque safári do Onde está Wally, com leões, girafas, elefantes, carros e um labirinto de plantas.",
+      esconderijos: [[1620, 900, 60], [960, 820, 55], [430, 1180, 75], [1150, 1340, 90], [1770, 600, 45], [760, 900, 60], [1960, 1110, 70]]
+    },
+    {
+      id: "aeroporto", nome: "Aeroporto", l: 2048, a: 1310, onde: "no aeroporto",
+      alt: "Aeroporto lotado do Onde está Wally, com aviões, esteira de bagagens, caixas e passageiros correndo.",
+      esconderijos: [[150, 1170, 80], [1420, 1000, 65], [250, 640, 55], [1300, 1290, 90], [1000, 310, 35], [300, 240, 40], [790, 900, 70]]
+    },
+    {
+      id: "babel", nome: "Torre de Babel", l: 3200, a: 2342, onde: "na Torre de Babel",
+      alt: "A Torre de Babel, pintura de Pieter Bruegel de 1563, com a torre enorme, operários, o rei e o porto.",
+      esconderijos: [[708, 2183, 233], [1250, 1250, 32], [2167, 1775, 36], [2042, 1908, 40], [417, 1683, 40], [2750, 2133, 40], [2250, 1183, 30]]
+    }
+  ];
 
-  /* onde o Bulaxa está, em pixels da imagem original —
-     não depende do tamanho da tela */
-  const BULAXA = { x: 2094, y: 354, w: 42, h: 82 };
+  /* recortes do Bulaxa para esconder: tamanho do arquivo e altura relativa à pessoa */
+  const RECORTES = [
+    { id: "orelhas", l: 203, a: 300, fator: 0.85 },
+    { id: "filhote", l: 160, a: 300, fator: 0.7 },
+    { id: "coleira", l: 205, a: 300, fator: 0.7 },
+    { id: "focinho", l: 186, a: 300, fator: 0.65 },
+    { id: "deitado", l: 236, a: 220, fator: 0.85 }
+  ];
+
+  /* fotos que aparecem quando acha */
+  const FOTOS = [
+    { id: "capuz", alt: "Bulaxa, um cachorro caramelo, de capuz cinza olhando para a câmera." },
+    { id: "lencol", alt: "Só a cabeça do Bulaxa saindo de baixo do lençol." },
+    { id: "lingua", alt: "Bulaxa feliz, de língua de fora." },
+    { id: "dino", alt: "Bulaxa fantasiado de dinossauro verde." },
+    { id: "peixe", alt: "Bulaxa de pijama segurando um peixe de pelúcia na boca." },
+    { id: "olhos", alt: "Bulaxa no escuro com os olhos brilhando e uma mão acenando." },
+    { id: "capa", alt: "Bulaxa de capuz preto em cima da cama." },
+    { id: "camisa10", alt: "Bulaxa com a camisa 10 da seleção brasileira." },
+    { id: "oculos", alt: "Bulaxa de moletom e óculos escuros espelhados." }
+  ];
+
+  /* rodada atual: cena, tamanho e retângulo do Bulaxa em px da imagem */
+  let cenaAtual = null;
+  let CENA_L = 1;
+  let CENA_A = 1;
+  let BULAXA = { x: 0, y: 0, w: 0, h: 0 };
+  let ultimoRecorte = -1;
+  let ultimaFoto = -1;
 
   /* tolerância extra do clique, em px de tela (ajuda no toque) */
   const FOLGA_TELA = 8;
@@ -15,6 +69,8 @@
   const palco = document.getElementById("palco");
   const camada = document.getElementById("camada");
   const cena = document.getElementById("cena");
+  const fotoVitoria = document.getElementById("foto-vitoria");
+  const escolha = document.getElementById("escolha-cena");
   const marcas = document.getElementById("marcas");
   const elMira = document.querySelector(".mira");
   const carregando = document.getElementById("carregando");
@@ -41,7 +97,7 @@
   const ERROS = [
     "Esse não é o Bulaxa. Continue procurando.",
     "Nada de Bulaxa por aqui.",
-    "Ali só tem gente tomando sol.",
+    "Ali só tem gente.",
     "Não é ele. Olhe com mais calma."
   ];
 
@@ -294,7 +350,7 @@
     anel.className = "marca-achou";
     marcas.append(anel);
 
-    dizer("Achou! Bulaxa estava de chapéu de festa, perto do mar.", "achou");
+    dizer(`Achou! Bulaxa estava ${cenaAtual.onde}.`, "achou");
     btnDeNovoRodape.hidden = false;
 
     const cx = BULAXA.x + BULAXA.w / 2;
@@ -327,17 +383,106 @@
     return new Promise((r) => setTimeout(r, ms));
   }
 
-  function reiniciar() {
+  /* sorteia um índice de 0 a n-1 diferente de "evitar" (quando houver opção) */
+  function sortear(n, evitar = -1) {
+    if (n < 2) return 0;
+    let i;
+    do {
+      i = Math.floor(Math.random() * n);
+    } while (i === evitar);
+    return i;
+  }
+
+  /* imagens já baixadas, por endereço (trocar de cena e voltar não baixa de novo) */
+  const imagens = new Map();
+
+  function carregar(src) {
+    if (!imagens.has(src)) {
+      const pedido = new Promise((resolver, rejeitar) => {
+        const img = new Image();
+        img.onload = () => resolver(img);
+        img.onerror = () => rejeitar(new Error(src));
+        img.src = src;
+      });
+      pedido.catch(() => imagens.delete(src));
+      imagens.set(src, pedido);
+    }
+    return imagens.get(src);
+  }
+
+  /* esconde o Bulaxa: um esconderijo e um recorte sorteados; devolve o arquivo do recorte */
+  function esconder() {
+    const [x, y, a] = cenaAtual.esconderijos[sortear(cenaAtual.esconderijos.length)];
+    ultimoRecorte = sortear(RECORTES.length, ultimoRecorte);
+    const r = RECORTES[ultimoRecorte];
+    const h = Math.round(a * r.fator);
+    const w = Math.round((r.l * h) / r.a);
+    BULAXA = { x: Math.round(x - w / 2), y: y - h, w, h };
+
+    /* a foto do final já vai carregando */
+    ultimaFoto = sortear(FOTOS.length, ultimaFoto);
+    const f = FOTOS[ultimaFoto];
+    fotoVitoria.src = `assets/bulaxa/foto-${f.id}.webp`;
+    fotoVitoria.alt = f.alt;
+
+    return `assets/bulaxa/esconde-${r.id}.webp`;
+  }
+
+  /* desenha cena e Bulaxa juntos no canvas: assim ele nunca aparece antes da cena */
+  async function montarCena(pedida, recorte) {
+    try {
+      const [fundo, bulaxa] = await Promise.all([carregar(`assets/cenas/${pedida.id}.webp`), carregar(recorte)]);
+      if (pedida !== cenaAtual) return;
+      cena.width = CENA_L;
+      cena.height = CENA_A;
+      const ctx = cena.getContext("2d");
+      ctx.drawImage(fundo, 0, 0, CENA_L, CENA_A);
+      ctx.drawImage(bulaxa, BULAXA.x, BULAXA.y, BULAXA.w, BULAXA.h);
+      cenaPronta();
+    } catch {
+      if (pedida === cenaAtual) {
+        carregando.textContent = "Não foi possível carregar a cena. Recarregue a página.";
+      }
+    }
+  }
+
+  /* começa uma rodada na cena pedida (ou numa sorteada, diferente da atual) */
+  function novaRodada(id) {
+    const anterior = cenaAtual;
+    cenaAtual = id
+      ? CENAS.find((c) => c.id === id) || CENAS[0]
+      : CENAS[sortear(CENAS.length, CENAS.indexOf(anterior))];
+    escolha.value = cenaAtual.id;
+
     achou = false;
     tentativas = 0;
     placar.textContent = "0";
-    inicio = performance.now();
     palco.classList.remove("achou");
     marcas.replaceChildren();
     btnDeNovoRodape.hidden = true;
     if (dialogo.open) dialogo.close();
+    mira = null;
+    const recorte = esconder();
     dicaInicial();
-    animarPara(vistaInicial());
+
+    palco.setAttribute("aria-label", `Cena: ${cenaAtual.nome}`);
+    cena.setAttribute("aria-label", cenaAtual.alt);
+    pronta = false;
+    pararAnimacao();
+    palco.classList.remove("pronta");
+    carregando.textContent = `Carregando: ${cenaAtual.nome}…`;
+    carregando.hidden = false;
+    CENA_L = cenaAtual.l;
+    CENA_A = cenaAtual.a;
+    if (larg > 0) {
+      encaixe = Math.min(larg / CENA_L, alt / CENA_A);
+      aplicar(vistaInicial());
+    }
+    montarCena(cenaAtual, recorte);
+  }
+
+  function reiniciar() {
+    novaRodada();
     palco.focus({ preventScroll: true });
   }
 
@@ -565,16 +710,10 @@
     palco.classList.add("pronta");
   }
 
-  if (cena.complete && cena.naturalWidth > 0) {
-    cenaPronta();
-  } else {
-    cena.addEventListener("load", cenaPronta, { once: true });
-    cena.addEventListener("error", () => {
-      carregando.textContent = "Não foi possível carregar a praia. Recarregue a página.";
-    });
-  }
+  for (const c of CENAS) escolha.add(new Option(c.nome, c.id));
+  escolha.addEventListener("change", () => novaRodada(escolha.value));
 
+  novaRodada();
   new ResizeObserver(medir).observe(palco);
   medir();
-  dicaInicial();
 })();
